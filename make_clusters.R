@@ -121,8 +121,8 @@ find_best_seed <- function(sub_state, sub_seed, pop_sensitivity) {
   seed_winner <- as.vector(rr_all[index_winner,])
   return(seed_winner)
 }
-find_best_cluster <- function(zip_df, sub_state_code, n_districts, n_iterations, pop_sensitivity) {
-  sub_state <- zip_df %>% filter(state == sub_state_code) %>% sample_n(200)
+find_best_cluster <- function(zip_df, sub_state_code, n_districts, n_iterations, pop_sensitivity, n_sample) {
+  sub_state <- zip_df %>% filter(state == sub_state_code) %>% sample_n(n_sample)
   sub_seed <- sample(x = sub_state$zip, size = n_districts)
   
   # Init Current State
@@ -154,7 +154,6 @@ find_best_cluster <- function(zip_df, sub_state_code, n_districts, n_iterations,
   final_cluster <- cluster_districts(sub_state = zip_df %>% filter(state == sub_state_code),
                                      sub_seed = curr_seed,
                                      pop_sensitivity = pop_sensitivity)
-  #TODO: learn from sample, but output model grown from full set
   return(final_cluster)
 }
 
@@ -180,15 +179,16 @@ zip %<>%
 
 
 # Make Cluster DF
-run_state_name <- 'oregon'
-run_state_code <- 'OR'
+run_state_name <- 'oklahoma'
+run_state_code <- 'OK'
 
 time_start <- Sys.time()
 test_df1 <- find_best_cluster(zip_df = zip,
                               sub_state_code = run_state_code,
                               n_districts = 5,
                               n_iterations = 10,
-                              pop_sensitivity = 0.05)
+                              pop_sensitivity = 0.05,
+                              n_sample = 100)
 score_cluster(test_df1)
 time_end <- Sys.time()
 difftime(time_end, time_start)
@@ -214,14 +214,14 @@ ggplot(data = test_df1, aes(x = longitude, y = latitude, color = as.factor(clust
         axis.title = element_blank(),
         axis.line = element_blank(),
         axis.ticks = element_blank())
-ggsave(file = './plots/OR_k5_200.png', dpi = 500)
+ggsave(file = './plots/OK_k5_100.png', dpi = 500)
 
 
 # Visualize before
 zip %>%
     filter(state == run_state_code) %>%
     ggplot(data = ., aes(x = longitude, y = latitude)) +
-    geom_map(aes(map_id = run_state), 
+    geom_map(aes(map_id = run_state_name), 
              map = map_sub, 
              fill = 'light grey', 
              color = 'black', 
@@ -237,8 +237,6 @@ zip %>%
 ggsave(file = './plots/OR_zipcodes.png', dpi = 500)
 
 
-
-# TODO: density map with population
 
 
 
