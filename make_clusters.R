@@ -37,28 +37,28 @@ cluster_districts <- function(sub_state, sub_seed, pop_sensitivity) {
   n_districts <- length(sub_seed)
   sub_state$seed <- FALSE
   sub_state$seed[sub_state$zip %in% sub_seed] <- TRUE
-  clust_init <- data.frame(zip = sub_seed, 
+  clust_init <- data.frame(zip = sub_seed,
                            cluster_id = (1:n_districts),
                            stringsAsFactors = FALSE)
   sub_state <- sub_state %>% left_join(y = clust_init, by = c('zip' = 'zip'))
-  
+
   # Initialize Population Epsilon
   total_pop <- sum(sub_state$population)
   district_pop <- (total_pop / n_districts)
   population_epsilon <- district_pop + (district_pop * (pop_sensitivity / 2))
-  
+
   # Produce Cluster Queue
-  unclustered <- sub_state %>% 
-    filter(seed == FALSE) %>% 
+  unclustered <- sub_state %>%
+    filter(!seed) %>%
     select(zip, latitude, longitude, population) %>%
     rename(zip_candidate = zip,
            lat_candidate = latitude,
            lon_candidate = longitude,
            pop_candidate = population) %>%
     mutate(link_anchor = 1)
-  
+
   cluster_queue <- sub_state %>%
-    filter(seed == TRUE) %>%
+    filter(seed) %>%
     select(zip, latitude, longitude, cluster_id) %>%
     rename(zip_seed = zip,
            lat_seed = latitude,
@@ -72,23 +72,23 @@ cluster_districts <- function(sub_state, sub_seed, pop_sensitivity) {
                                  lat2 = lat_candidate)) %>%
     select(zip_seed, cluster_id, zip_candidate, pop_candidate, distance) %>%
     arrange(distance)
-  
+
   # Assign Clusters from Queue
   loop_index <- 1:nrow(cluster_queue)
   for (i in loop_index) {
     # Move to next queue entry if already clustered
     if (!is.na(sub_state$cluster_id[sub_state$zip == cluster_queue$zip_candidate[i]])) next
-    
+
     # Check to see if this addition will push the population over epsilon
     seed_pop <- sum((filter(.data = sub_state, cluster_id == cluster_queue$cluster_id[i]))$population)
     cand_pop <- cluster_queue$pop_candidate[i]
     if ((seed_pop + cand_pop) > population_epsilon) next
-    
+
     # Make Cluster Update to sub_state DF
     cand_zip <- cluster_queue$zip_candidate[i]
     cand_cid <- cluster_queue$cluster_id[i]
     sub_state$cluster_id[sub_state$zip == cand_zip] <- cand_cid
-    
+
   }
   return(sub_state)
 }
@@ -102,7 +102,7 @@ round_robin_full <- function(sub_seed, zip_sphere) {
   # TODO: consider rewrite with dplyr::rbind_all and apply function
   seed_matrix <- sub_seed  # Safe to skip in rewrite
   for (i in (1:length(sub_seed))) {
-    rr_sub_pos <- round_robin_matrix(sub_seed = sub_seed, 
+    rr_sub_pos <- round_robin_matrix(sub_seed = sub_seed,
                                      zip_sphere = zip_sphere,
                                      sub_position = i)
     seed_matrix <- rbind(seed_matrix, rr_sub_pos)
@@ -124,16 +124,16 @@ find_best_seed <- function(sub_state, sub_seed, pop_sensitivity) {
 find_best_cluster <- function(zip_df, sub_state_code, n_districts, n_iterations, pop_sensitivity, n_sample) {
   sub_state <- zip_df %>% filter(state == sub_state_code) %>% sample_n(n_sample)
   sub_seed <- sample(x = sub_state$zip, size = n_districts)
-  
+
   # Init Current State
   curr_seed <- sub_seed
-  curr_cluster <- cluster_districts(sub_state = sub_state, 
-                                    sub_seed = curr_seed, 
+  curr_cluster <- cluster_districts(sub_state = sub_state,
+                                    sub_seed = curr_seed,
                                     pop_sensitivity = pop_sensitivity)
   curr_score <- score_cluster(curr_cluster)
   print(curr_score)
   curr_itr <- 0
-  
+
   # Loop Through up to N iterations looking for better state
   while (curr_itr < n_iterations) {
     new_seed <- find_best_seed(sub_state = sub_state,
@@ -150,7 +150,7 @@ find_best_cluster <- function(zip_df, sub_state_code, n_districts, n_iterations,
     curr_itr <- curr_itr + 1
     print(curr_score)
   }
-  
+
   final_cluster <- cluster_districts(sub_state = zip_df %>% filter(state == sub_state_code),
                                      sub_seed = curr_seed,
                                      pop_sensitivity = pop_sensitivity)
@@ -168,13 +168,15 @@ pop <- read.csv(file = './data/pop_zip_2010.csv',
                 header = TRUE,
                 colClasses = 'character')
 
-zip %<>%
+zip_pop <- zip %>%
     inner_join(y = pop, by = 'zip') %>%
-    mutate(latitude = as.numeric(latitude),
-           longitude = as.numeric(longitude),
-           state = as.factor(state),
-           population = as.numeric(population)) %>%
+    mutate(state = as.factor(state)) %>%
+    mutate(latitude = as.numeric(latitude)) %>%
+    mutate(longitude = as.numeric(longitude)) %>%
+    mutate(population = as.numeric(population)) %>%
+    filter(population > 0) %>%
     select(zip, city, state, latitude, longitude, population)
+
 
 
 
@@ -183,27 +185,28 @@ run_state_name <- 'oklahoma'
 run_state_code <- 'OK'
 
 time_start <- Sys.time()
-test_df1 <- find_best_cluster(zip_df = zip,
-                              sub_state_code = run_state_code,
-                              n_districts = 5,
-                              n_iterations = 10,
-                              pop_sensitivity = 0.05,
-                              n_sample = 100)
-score_cluster(test_df1)
+zip_clust <- find_best_cluster(zip_df = zip_pop,
+                               sub_state_code = run_state_code,
+                               n_districts = 5,
+                               n_iterations = 10,
+                               pop_sensitivity = 0.1,
+                               n_sample = 100)
+score_cluster(zip_clust)
 time_end <- Sys.time()
 difftime(time_end, time_start)
 
+save(x = zip_clust, file = './state/OK_k5_150.RData')
 
-# TODO: write plot map object functions
+
 
 # Visualize
 map <- map_data('state')
 map_sub <- map[map$region == run_state_name,]
-ggplot(data = test_df1, aes(x = longitude, y = latitude, color = as.factor(cluster_id))) +
-  geom_map(aes(map_id = run_state_name), 
-           map = map_sub, 
-           fill = 'light grey', 
-           color = 'black', 
+ggplot(data = zip_clust, aes(x = longitude, y = latitude, color = as.factor(cluster_id))) +
+  geom_map(aes(map_id = run_state_name),
+           map = map_sub,
+           fill = 'light grey',
+           color = 'black',
            size = 1.25) +
   expand_limits(x = map_sub$long, y = map_sub$lat) +
   geom_text(aes(label = cluster_id, fontface = 'bold')) +
@@ -214,17 +217,17 @@ ggplot(data = test_df1, aes(x = longitude, y = latitude, color = as.factor(clust
         axis.title = element_blank(),
         axis.line = element_blank(),
         axis.ticks = element_blank())
-ggsave(file = './plots/OK_k5_100.png', dpi = 500)
+ggsave(file = './plots/OK_k5_150.png', dpi = 500)
 
 
 # Visualize before
 zip %>%
     filter(state == run_state_code) %>%
     ggplot(data = ., aes(x = longitude, y = latitude)) +
-    geom_map(aes(map_id = run_state_name), 
-             map = map_sub, 
-             fill = 'light grey', 
-             color = 'black', 
+    geom_map(aes(map_id = run_state_name),
+             map = map_sub,
+             fill = 'light grey',
+             color = 'black',
              size = 1.00) +
     expand_limits(x = map_sub$long, y = map_sub$lat) +
     geom_point(shape = 20, size = 6, color = 'black', alpha = 0.5) +
@@ -244,17 +247,3 @@ ggsave(file = './plots/OR_zipcodes.png', dpi = 500)
 
 
 # TODO: given optimal cluster seeds, produce animation of clustering process
-
-
-
-
-
-
-
-
-
-
-
-
-
-
