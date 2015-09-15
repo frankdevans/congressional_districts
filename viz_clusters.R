@@ -4,9 +4,9 @@ library(maps)
 
 
 
-run_state_name <- 'kentucky'
-run_state_code <- 'KY'
-load(file = './state/KY_k6_all.RData')
+run_state_name <- 'oklahoma'
+run_state_code <- 'OK'
+load(file = './state/OK_k5_all.RData')
 
 # Visualize Clusters - Text Numbers
 map <- map_data('state')
@@ -26,7 +26,7 @@ ggplot(data = zip_clust, aes(x = longitude, y = latitude, color = as.factor(clus
         axis.title = element_blank(),
         axis.line = element_blank(),
         axis.ticks = element_blank())
-#ggsave(file = './plots/OK_k5_150.png', dpi = 500)
+#ggsave(file = './plots/OK_k6_150.png', dpi = 500)
 
 
 # Visualize Clusters - Color Points
@@ -47,7 +47,7 @@ ggplot(data = zip_clust, aes(x = longitude, y = latitude, color = as.factor(clus
           axis.title = element_blank(),
           axis.line = element_blank(),
           axis.ticks = element_blank())
-#ggsave(file = './plots/OK_k5_points.png', dpi = 500)
+#ggsave(file = './plots/OK_k4_points.png', dpi = 500)
 
 
 # Visualize before
@@ -66,7 +66,13 @@ zip_clust %>%
           axis.title = element_blank(),
           axis.line = element_blank(),
           axis.ticks = element_blank())
-#ggsave(file = './plots/OR_zipcodes.png', dpi = 500)
+#ggsave(file = './plots/AR_zipcodes.png', dpi = 500)
 
 
 # TODO: given optimal cluster seeds, produce animation of clustering process
+
+
+
+
+
+
