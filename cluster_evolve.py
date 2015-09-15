@@ -33,7 +33,6 @@ state_zips = {ST:[zip,zip]}
 '''
 
 
-
 def init_assignment(state, clusters):
     cluster_set = [[] for i in range(clusters)]
 
@@ -64,6 +63,7 @@ def make_move_set(cluster):
 
     random.shuffle(collector)
     return collector
+def enact_move(cluster, move): pass
 def cluster_pop_sum(cluster):
     # Sum population for each cluster
     sum_pop = []
@@ -92,7 +92,26 @@ def score_cluster(cluster):
                 running_k.append(haversine(zip_coords[k_l], zip_coords[k_r]))
         collector.append(np.mean(running_k))
     return np.mean(collector)
-def evolve_cluster(): pass
+def evolve_cluster(cluster):
+    if cluster == 201:
+        return (False, [])
+    else:
+        return (True, [])
+
+
+# Processing Pipeline
+cur_cluster = init_assignment(state = subject_state, clusters = num_clusters)
+cur_score = score_cluster(cur_cluster)
+itr = 0
+keep_evolving = True
+while keep_evolving:
+    keep_evolving, toss = evolve_cluster(itr)
+    # Log Iterations
+    itr += 1
+    if (itr % 100 == 0):
+        print 'ITRe2: ', itr / 100
+    if itr == 400:
+        keep_evolving = False
 
 
 
