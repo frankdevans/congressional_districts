@@ -1,28 +1,19 @@
-import sys, datetime, json
+import sys, datetime, random, json
 from haversine import haversine
 import numpy as np
 
 
 # TODO: gather command line arguments, simulate for dev
 subject_state = 'OK'
-seed_num = 1300
 num_clusters = 5
 population_epsilon = 0.1
 
+random.seed(1300)
 
 
 # Read in Raw Data
 with open('./data/zip_pop.json', 'r') as f:
     raw_data = json.loads(f.read())
-
-'''
-[{  u'latitude': 42.0706,
-    u'state': u'MA',
-    u'longitude': -72.6203,
-    u'zip': u'01001',
-    u'population': 16769
-}]
-'''
 
 
 # Build Global References
@@ -39,8 +30,6 @@ for i in raw_data:
 #print zip_coords['73162']
 #print state_zips['OK'][:10]
 
-#print haversine(zip_coords['73162'], zip_coords['73106'], miles = True)
-
 ''' Schema Notes
 zip_pop = {zip:pop}
 zip_coords = {zip:(lat,lon)}
@@ -49,11 +38,23 @@ state_zips = {ST:[zip,zip]}
 
 
 
-def init_assignment(): pass
-def evolve_cluster(): pass
+def init_assignment(state, clusters):
+    cluster_set = [[] for i in range(clusters)]
+
+    zips = state_zips[state]
+    random.shuffle(zips)
+
+    # Deal ZIP codes like cards to lowest running population at each step
+    for i in zips:
+        pop_each = cluster_pop_sum(cluster_set)
+        index_push = pop_each.index(np.min(pop_each))
+        cluster_set[index_push].append(i)
+
+    return cluster_set
 def make_switch_set(): pass
 def make_move_set(): pass
-def cluster_pop_balance(cluster, pop_eps):
+def evolve_cluster(): pass
+def cluster_pop_sum(cluster):
     # Sum population for each cluster
     sum_pop = []
     for i in cluster:
@@ -61,11 +62,13 @@ def cluster_pop_balance(cluster, pop_eps):
         for z in i:
             running_k += zip_pop[z]
         sum_pop.append(running_k)
-
+    return sum_pop
+def cluster_pop_balance(cluster, pop_eps):
+    pop_by_cluster = cluster_pop_sum(cluster)
     # Determine if epsilon violations
-    pop_mean = np.mean(sum_pop)
-    pass_high = (np.max(sum_pop) - pop_mean) / pop_mean <= pop_eps
-    pass_low = (pop_mean - np.min(sum_pop)) / pop_mean <= pop_eps
+    pop_mean = np.mean(pop_by_cluster)
+    pass_high = (np.max(pop_by_cluster) - pop_mean) / pop_mean <= pop_eps
+    pass_low = (pop_mean - np.min(pop_by_cluster)) / pop_mean <= pop_eps
     return (pass_high and pass_low)
 def score_cluster(cluster):
     collector = []
@@ -85,6 +88,16 @@ def score_cluster(cluster):
 
 #------------------------------------------------
 # Unit Tests
+'''
+print '\n'
+print 'Unit Test: init_assignment()'
+start_time = datetime.datetime.now()
+initial_state = init_assignment('OK', 5)
+print 'Cluster 2, first 5: ', initial_state[2][:5]
+print 'Cluster 3, first 5: ', initial_state[3][:5]
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
 print '\n'
 print 'Unit Test: score_cluster()'
 start_time = datetime.datetime.now()
@@ -94,8 +107,34 @@ print 'Execution Time: ', datetime.datetime.now() - start_time
 
 
 print '\n'
+print 'Unit Test: cluster_pop_sum()'
+start_time = datetime.datetime.now()
+test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
+print cluster_pop_sum(test_k)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: cluster_pop_sum() empty'
+start_time = datetime.datetime.now()
+test_k = [[],[]]
+print cluster_pop_sum(test_k)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
 print 'Unit Test: cluster_pop_balance()'
 start_time = datetime.datetime.now()
 test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
 print cluster_pop_balance(test_k, 0.1)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+'''
+
+print '\n'
+print 'Unit Test: init_assignment, cluster_pop_sum, cluster_pop_balance, score_cluster'
+start_time = datetime.datetime.now()
+initial_state = init_assignment('OK', 5)
+print 'Sum: ', cluster_pop_sum(initial_state)
+print 'Balance: ', cluster_pop_balance(initial_state, 0.1)
+print 'Score: ', score_cluster(initial_state)
 print 'Execution Time: ', datetime.datetime.now() - start_time
