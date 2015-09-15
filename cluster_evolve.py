@@ -1,5 +1,6 @@
-import sys, json
+import sys, datetime, json
 from haversine import haversine
+import numpy as np
 
 
 # TODO: gather command line arguments, simulate for dev
@@ -52,13 +53,26 @@ def make_switch_set(): pass
 def make_move_set(): pass
 def cluster_pop_balance(): pass
 def score_cluster(cluster):
-    #TODO: all pairs average within each cluster
-    return 5
+    collector = []
+    for i in cluster:
+        running_k = []
+        # TODO: rewrite with combinatoric method
+        for k_l in i:
+            for k_r in i:
+                if (int(k_l) >= int(k_r)):
+                    continue  # only compare 1 way, not to itself
+                running_k.append(haversine(zip_coords[k_l], zip_coords[k_r]))
+        collector.append(np.mean(running_k))
+    return np.mean(collector)
 
 
 
 
 #------------------------------------------------
 # Unit Tests
+print '\n'
+print 'Unit Test: score_cluster()'
+start_time = datetime.datetime.now()
 test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
 print score_cluster(test_k)
+print 'Execution Time: ', datetime.datetime.now() - start_time
