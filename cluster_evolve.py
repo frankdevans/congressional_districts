@@ -1,4 +1,4 @@
-import sys, datetime, random, json
+import sys, datetime, random, json, copy
 from haversine import haversine
 import numpy as np
 
@@ -63,7 +63,12 @@ def make_move_set(cluster):
 
     random.shuffle(collector)
     return collector
-def enact_move(cluster, move): pass
+def enact_move(cluster, move):
+    #(zip,k_from, k_to)
+    local = copy.deepcopy(cluster)  # Prevent original object from being mutated
+    local[move[1]].remove(move[0])
+    local[move[2]].append(move[0])
+    return local
 def cluster_pop_sum(cluster):
     # Sum population for each cluster
     sum_pop = []
@@ -112,6 +117,10 @@ while keep_evolving:
         print 'ITRe2: ', itr / 100
     if itr == 400:
         keep_evolving = False
+
+
+
+# Write Out Results
 
 
 
@@ -199,6 +208,17 @@ initial_state = init_assignment('OK', 5)
 ms = make_move_set(initial_state)
 print len(ms)
 print ms[:20]
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: enact_move()'
+start_time = datetime.datetime.now()
+test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
+print test_k
+alt_k = enact_move(test_k, ('73002', 0, 1))
+print alt_k
+print test_k
 print 'Execution Time: ', datetime.datetime.now() - start_time
 
 
