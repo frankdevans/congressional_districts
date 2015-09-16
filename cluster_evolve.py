@@ -102,8 +102,22 @@ def evolve_cluster(cluster):
         return (False, [])
     else:
         return (True, [])
+def write_out_results(cluster, state, k, eps, seed):
+    output_filename = '{state}_k{k}_e{eps}_s{seed}.json'.format(
+        state = state,
+        k = k,
+        eps = int(eps * 100),
+        seed = seed
+    )
+    with open('./evolve_output/' + output_filename, 'w') as f:
+        f.write(json.dumps(cluster))
+
+    return output_filename
+def process_cluster_pipeline(): pass
 
 
+'''
+#TODO: encapsulate pipeline in function
 # Processing Pipeline
 cur_cluster = init_assignment(state = subject_state, clusters = num_clusters)
 cur_score = score_cluster(cur_cluster)
@@ -119,8 +133,11 @@ while keep_evolving:
         keep_evolving = False
 
 
+'''
 
-# Write Out Results
+
+
+
 
 
 
@@ -221,6 +238,21 @@ print alt_k
 print test_k
 print 'Execution Time: ', datetime.datetime.now() - start_time
 
+
+print '\n'
+print 'Unit Test: write_out_results()'
+start_time = datetime.datetime.now()
+test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
+write_out_results(test_k, 'XX', 0, 0.05, 1300)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: write_out_results() real data'
+start_time = datetime.datetime.now()
+initial_state = init_assignment('FL', 25)
+write_out_results(initial_state, 'FL', 25, 0.10, 900)
+print 'Execution Time: ', datetime.datetime.now() - start_time
 
 
 # Tool Functions
