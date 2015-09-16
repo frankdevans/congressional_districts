@@ -4,11 +4,10 @@ import numpy as np
 
 
 # TODO: gather command line arguments, simulate for dev
-subject_state = 'OK'
-num_clusters = 5
-population_epsilon = 0.1
+subject_state = sys.argv[1]
+num_clusters = int(sys.argv[2])
+population_epsilon = float(sys.argv[3])
 
-random.seed(1300)
 
 
 # Read in Raw Data
@@ -98,10 +97,19 @@ def score_cluster(cluster):
         collector.append(np.mean(running_k))
     return np.mean(collector)
 def evolve_cluster(cluster):
-    if cluster == 201:
-        return (False, [])
-    else:
-        return (True, [])
+    cur_score = score_cluster(cluster)
+    move_set = make_move_set(cluster)
+    counter = 0
+    for i in move_set:
+        counter += 1
+        if (counter % 100 == 0):
+            print 'Evolve Counter (C): ', counter / 100
+        eval_cluster = enact_move(cluster, i)
+        eval_score = score_cluster(eval_cluster)
+        if eval_score < cur_score:
+            print 'Evolve Final: ', counter
+            return (True, eval_cluster)
+    return (False, cluster)
 def write_out_results(cluster, state, k, eps, seed):
     output_filename = '{state}_k{k}_e{eps}_s{seed}.json'.format(
         state = state,
@@ -113,29 +121,56 @@ def write_out_results(cluster, state, k, eps, seed):
         f.write(json.dumps(cluster))
 
     return output_filename
-def process_cluster_pipeline(): pass
+def process_cluster_pipeline(state, clusters, population_eps, seed):
+    random.seed(seed)
+    cur_cluster = init_assignment(
+        state = state,
+        clusters = clusters
+    )
 
+    itr = 0
+    keep_evolving = True
+    while keep_evolving:
+        # Log Iterations
+        itr += 1
+        print 'ITR:', itr, 'Score:', round(score_cluster(cur_cluster), 3)
+
+        keep_evolving, cur_cluster = evolve_cluster(cur_cluster)
+
+        #TODO: TEMP or param
+        if itr == 100:
+            keep_evolving = False
+
+    print 'Final Score:', round(score_cluster(cur_cluster), 3)
+    write_out_results(
+        cluster = cur_cluster,
+        state = state,
+        k = clusters,
+        eps = population_eps,
+        seed = seed
+    )
+
+    return "Done"
+
+
+
+process_cluster_pipeline(
+    state = subject_state,
+    clusters = num_clusters,
+    population_eps = population_epsilon,
+    seed = 1300
+)
 
 '''
-#TODO: encapsulate pipeline in function
-# Processing Pipeline
-cur_cluster = init_assignment(state = subject_state, clusters = num_clusters)
-cur_score = score_cluster(cur_cluster)
-itr = 0
-keep_evolving = True
-while keep_evolving:
-    keep_evolving, toss = evolve_cluster(itr)
-    # Log Iterations
-    itr += 1
-    if (itr % 100 == 0):
-        print 'ITRe2: ', itr / 100
-    if itr == 400:
-        keep_evolving = False
-
-
+seeds = [250, 600, 750, 1000, 1300]
+for s in seeds:
+    process_cluster_pipeline(
+        state = subject_state,
+        clusters = num_clusters,
+        population_eps = population_epsilon,
+        seed = s
+    )
 '''
-
-
 
 
 
