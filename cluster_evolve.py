@@ -103,11 +103,10 @@ def evolve_cluster(cluster):
     for i in move_set:
         counter += 1
         if (counter % 100 == 0):
-            print 'Evolve Counter (C): ', counter / 100
+            print 'Evolve Counter (100s): ', counter / 100
         eval_cluster = enact_move(cluster, i)
         eval_score = score_cluster(eval_cluster)
         if eval_score < cur_score:
-            print 'Evolve Final: ', counter
             return (True, eval_cluster)
     return (False, cluster)
 def write_out_results(cluster, state, k, eps, seed):
@@ -138,8 +137,7 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
         keep_evolving, cur_cluster = evolve_cluster(cur_cluster)
 
         #TODO: TEMP or param
-        if itr == 100:
-            keep_evolving = False
+        #if itr == 500: keep_evolving = False
 
     print 'Final Score:', round(score_cluster(cur_cluster), 3)
     write_out_results(
