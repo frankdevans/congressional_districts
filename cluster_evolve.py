@@ -3,7 +3,7 @@ from haversine import haversine
 import numpy as np
 
 
-# TODO: gather command line arguments, simulate for dev
+# Capture Arguments
 subject_state = sys.argv[1]
 num_clusters = int(sys.argv[2])
 population_epsilon = float(sys.argv[3])
@@ -121,6 +121,7 @@ def write_out_results(cluster, state, k, eps, seed):
 
     return output_filename
 def process_cluster_pipeline(state, clusters, population_eps, seed):
+    start_time = datetime.datetime.now()
     random.seed(seed)
     cur_cluster = init_assignment(
         state = state,
@@ -132,7 +133,9 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
     while keep_evolving:
         # Log Iterations
         itr += 1
-        print 'ITR:', itr, 'Score:', round(score_cluster(cur_cluster), 3)
+        e_time = datetime.datetime.now() - start_time
+        score_pretty = round(score_cluster(cur_cluster), 3)
+        print 'ITR:', itr, 'E-Time:', e_time, 'Score:', score_pretty
 
         keep_evolving, cur_cluster = evolve_cluster(cur_cluster)
 
