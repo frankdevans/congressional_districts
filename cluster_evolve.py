@@ -96,7 +96,7 @@ def score_cluster(cluster):
                 running_k.append(haversine(zip_coords[k_l], zip_coords[k_r]))
         collector.append(np.mean(running_k))
     return np.mean(collector)
-def evolve_cluster(cluster):
+def evolve_cluster(cluster, pop_eps):
     cur_score = score_cluster(cluster)
     move_set = make_move_set(cluster)
     counter = 0
@@ -105,6 +105,8 @@ def evolve_cluster(cluster):
         if (counter % 100 == 0):
             print 'Evolve Counter (100s): ', counter / 100
         eval_cluster = enact_move(cluster, i)
+        if not cluster_pop_balance(eval_cluster, pop_eps):
+            continue
         eval_score = score_cluster(eval_cluster)
         if eval_score < cur_score:
             return (True, eval_cluster)
@@ -137,10 +139,9 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
         score_pretty = round(score_cluster(cur_cluster), 3)
         print 'ITR:', itr, 'E-Time:', e_time, 'Score:', score_pretty
 
-        keep_evolving, cur_cluster = evolve_cluster(cur_cluster)
+        keep_evolving, cur_cluster = evolve_cluster(cur_cluster, population_eps)
 
-        #TODO: TEMP or param
-        #if itr == 500: keep_evolving = False
+        #if itr == 25: keep_evolving = False
 
     print 'Final Score:', round(score_cluster(cur_cluster), 3)
     write_out_results(
