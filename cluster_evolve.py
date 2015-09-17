@@ -48,6 +48,7 @@ def init_assignment(state, clusters):
 def make_switch_set(cluster):
     #[(zip, zip)] or [((k,zip),(k,zip))] in random order
     pass
+def enact_switch(): pass
 def make_move_set(cluster):
     #[(zip,k_from, k_to)]  in random order
     k = len(cluster)
@@ -112,6 +113,30 @@ def evolve_cluster(cluster, pop_eps):
             return (True, eval_cluster)
     return (False, cluster)
 def write_out_results(cluster, state, k, eps, seed):
+    out = {}
+    out['state'] = state
+    out['n_clusters'] = k
+    out['n_zips'] = len(state_zips[state])
+    out['population_eps'] = eps
+    out['seed'] = seed
+    out['raw'] = cluster
+
+    # Convert raw cluster to friendly assignment output
+    assignment = []
+    for i in cluster:
+        index_k = cluster.index(i)
+        for z in i:
+            assign_sub = {}
+            assign_sub['zip'] = z
+            assign_sub['cluster_id'] = index_k
+            assign_sub['population'] = zip_pop[z]
+            assign_coords = zip_coords[z]
+            assign_sub['latitude'] = assign_coords[0]
+            assign_sub['longitude'] = assign_coords[1]
+            assignment.append(assign_sub)
+    out['assignment'] = assignment
+
+    # Build filename and write out object
     output_filename = '{state}_k{k}_e{eps}_s{seed}.json'.format(
         state = state,
         k = k,
@@ -119,7 +144,7 @@ def write_out_results(cluster, state, k, eps, seed):
         seed = seed
     )
     with open('./evolve_output/' + output_filename, 'w') as f:
-        f.write(json.dumps(cluster))
+        f.write(json.dumps(out))
 
     return output_filename
 def process_cluster_pipeline(state, clusters, population_eps, seed):
@@ -141,7 +166,7 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
 
         keep_evolving, cur_cluster = evolve_cluster(cur_cluster, population_eps)
 
-        #if itr == 25: keep_evolving = False
+        #if itr == 10: keep_evolving = False
 
     print 'Final Score:', round(score_cluster(cur_cluster), 3)
     write_out_results(
