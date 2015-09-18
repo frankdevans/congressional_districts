@@ -1,4 +1,4 @@
-import sys, datetime, random, json, copy
+import sys, datetime, random, json, copy, itertools
 from haversine import haversine
 import numpy as np
 
@@ -112,13 +112,8 @@ def cluster_pop_balance(cluster, pop_eps):
 def score_cluster(cluster):
     collector = []
     for i in cluster:
-        running_k = []
-        # TODO: rewrite with combinatoric method, takes nearly .2 sec on OK-5
-        for k_l in i:
-            for k_r in i:
-                if (int(k_l) >= int(k_r)):
-                    continue  # only compare 1 way, not to itself
-                running_k.append(haversine(zip_coords[k_l], zip_coords[k_r]))
+        pairs = itertools.combinations(i, 2)
+        running_k = [haversine(zip_coords[t[0]], zip_coords[t[1]]) for t in pairs]
         collector.append(np.mean(running_k))
     return np.mean(collector)
 def evolve_cluster(cluster, pop_eps):
@@ -243,10 +238,7 @@ for s in seeds:
 
 
 
-
-
 #------------------------------------------------
-
 # Unit Tests
 
 
