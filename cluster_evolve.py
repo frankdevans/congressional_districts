@@ -46,9 +46,33 @@ def init_assignment(state, clusters):
 
     return cluster_set
 def make_switch_set(cluster):
-    #[(zip, zip)] or [((k,zip),(k,zip))] in random order
-    pass
-def enact_switch(): pass
+    #[((zip,k),(zip,k))] in random order
+    k = len(cluster)
+    collector = []
+
+    cluster_ref ={}
+    zip_set = []
+    for i in cluster:
+        index_from = cluster.index(i)
+        for z in i:
+            cluster_ref[z] = index_from
+            zip_set.append(z)
+
+    for i in zip_set:
+        for t in zip_set:
+            if (int(i) < int(t)) and (cluster_ref[i] != cluster_ref[t]):
+                collector.append(((i, cluster_ref[t]),(t, cluster_ref[i])))
+
+    random.shuffle(collector)
+    return collector
+def enact_switch(cluster, move):
+    #[((zip,k),(zip,k))] in random order
+    local = copy.deepcopy(cluster)
+    local[move[1][1]].remove(move[0][0])
+    local[move[0][1]].append(move[0][0])
+    local[move[0][1]].remove(move[1][0])
+    local[move[1][1]].append(move[1][0])
+    return local
 def make_move_set(cluster):
     #[(zip,k_from, k_to)]  in random order
     k = len(cluster)
@@ -99,8 +123,10 @@ def score_cluster(cluster):
     return np.mean(collector)
 def evolve_cluster(cluster, pop_eps):
     cur_score = score_cluster(cluster)
-    move_set = make_move_set(cluster)
     counter = 0
+
+    # Eval Move Set
+    move_set = make_move_set(cluster)
     for i in move_set:
         counter += 1
         if (counter % 100 == 0):
@@ -111,6 +137,22 @@ def evolve_cluster(cluster, pop_eps):
         eval_score = score_cluster(eval_cluster)
         if eval_score < cur_score:
             return (True, eval_cluster)
+
+    # On to Switch Set if none found
+    print "Move Set Exhausted, Init Switch Set"
+    switch_set = make_switch_set(cluster)
+    for i in switch_set:
+        counter += 1
+        if (counter % 100 == 0):
+            print 'Evolve Counter (100s): ', counter / 100
+        eval_cluster = enact_switch(cluster, i)
+        if not cluster_pop_balance(eval_cluster, pop_eps):
+            continue
+        eval_score = score_cluster(eval_cluster)
+        if eval_score < cur_score:
+            return (True, eval_cluster)
+
+    # Return Self and trigger stop of Evolution if none
     return (False, cluster)
 def write_out_results(cluster, state, k, eps, seed):
     out = {}
@@ -206,6 +248,7 @@ for s in seeds:
 #------------------------------------------------
 
 # Unit Tests
+
 
 '''
 print '\n'
@@ -314,6 +357,33 @@ print 'Unit Test: write_out_results() real data'
 start_time = datetime.datetime.now()
 initial_state = init_assignment('FL', 25)
 write_out_results(initial_state, 'FL', 25, 0.10, 900)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: make_switch_set()'
+start_time = datetime.datetime.now()
+test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
+print make_switch_set(test_k)
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: make_switch_set() real data'
+start_time = datetime.datetime.now()
+initial_state = init_assignment('FL', 27)
+print len(make_switch_set(initial_state))
+print 'Execution Time: ', datetime.datetime.now() - start_time
+
+
+print '\n'
+print 'Unit Test: enact_switch()'
+start_time = datetime.datetime.now()
+test_k = [['73002', '73003','73004'],['73005','73007','73008','73009']]
+print test_k
+alt_k = enact_switch(test_k, (('73002',1),('73005',0)))
+print alt_k
+print test_k
 print 'Execution Time: ', datetime.datetime.now() - start_time
 
 
