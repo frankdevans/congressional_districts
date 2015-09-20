@@ -24,11 +24,17 @@ for i in raw_data:
         state_zips[i['state']] = []
     state_zips[i['state']].append(i['zip'])
 
+dist_lookup = {}
+for i in itertools.permutations(state_zips[subject_state], 2):
+    dist_lookup[i] = haversine(zip_coords[i[0]], zip_coords[i[1]])
+
+
 
 ''' Schema Notes
 zip_pop = {zip:pop}
 zip_coords = {zip:(lat,lon)}
 state_zips = {ST:[zip,zip]}
+dist_lookup = {(zip,zip):dist}
 '''
 
 
@@ -113,7 +119,8 @@ def score_cluster(cluster):
     collector = []
     for i in cluster:
         pairs = itertools.combinations(i, 2)
-        running_k = [haversine(zip_coords[t[0]], zip_coords[t[1]]) for t in pairs]
+        running_k = [dist_lookup[t] for t in pairs]
+        #running_k = [haversine(zip_coords[t[0]], zip_coords[t[1]]) for t in pairs]
         collector.append(np.mean(running_k))
     return np.mean(collector)
 def evolve_cluster(cluster, pop_eps):
@@ -217,16 +224,16 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
     return "Done"
 
 
-
+'''
 process_cluster_pipeline(
     state = subject_state,
     clusters = num_clusters,
     population_eps = population_epsilon,
     seed = 1300
 )
-
 '''
-seeds = [250, 600, 750, 1000, 1300]
+
+seeds = [250, 600, 750, 1000]
 for s in seeds:
     process_cluster_pipeline(
         state = subject_state,
@@ -234,7 +241,7 @@ for s in seeds:
         population_eps = population_epsilon,
         seed = s
     )
-'''
+
 
 
 
