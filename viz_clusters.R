@@ -4,9 +4,9 @@ library(maps)
 
 
 
-run_state_name <- 'oklahoma'
-run_state_code <- 'OK'
-load(file = './state/OK_k5_all.RData')
+run_state_name <- 'arkansas'
+run_state_code <- 'AR'
+load(file = './state/AR_k4_all_alt.RData')
 
 # Visualize Clusters - Text Numbers
 map <- map_data('state')
@@ -47,7 +47,7 @@ ggplot(data = zip_clust, aes(x = longitude, y = latitude, color = as.factor(clus
           axis.title = element_blank(),
           axis.line = element_blank(),
           axis.ticks = element_blank())
-#ggsave(file = './plots/OK_k4_points.png', dpi = 500)
+#ggsave(file = './plots/AR_k4_points_alt.png', dpi = 500)
 
 
 # Visualize before
