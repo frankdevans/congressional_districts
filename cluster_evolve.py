@@ -156,7 +156,7 @@ def evolve_cluster(cluster, pop_eps):
 
     # Return Self and trigger stop of Evolution if none
     return (False, cluster)
-def write_out_results(cluster, state, k, eps, seed):
+def write_out_results(cluster, state, k, eps, seed, score_hist, assign_hist):
     out = {}
     out['state'] = state
     out['n_clusters'] = k
@@ -164,6 +164,8 @@ def write_out_results(cluster, state, k, eps, seed):
     out['population_eps'] = eps
     out['seed'] = seed
     out['raw'] = cluster
+    out['score_hist'] = score_hist
+    out['assign_hist'] = assign_hist
 
     # Convert raw cluster to friendly assignment output
     assignment = []
@@ -191,9 +193,21 @@ def write_out_results(cluster, state, k, eps, seed):
         f.write(json.dumps(out))
 
     return output_filename
+def make_score_assign_memo(cluster):
+    collector = []
+    for i in cluster:
+        index_k = cluster.index(i)
+        for z in i:
+            assign_sub = {}
+            assign_sub['zip'] = z
+            assign_sub['cluster_id'] = index_k
+            collector.append(assign_sub)
+    return collector
 def process_cluster_pipeline(state, clusters, population_eps, seed):
     start_time = datetime.datetime.now()
     random.seed(seed)
+    score_hist = []
+    assign_hist = []
     cur_cluster = init_assignment(
         state = state,
         clusters = clusters
@@ -205,20 +219,26 @@ def process_cluster_pipeline(state, clusters, population_eps, seed):
         # Log Iterations
         itr += 1
         e_time = datetime.datetime.now() - start_time
-        score_pretty = round(score_cluster(cur_cluster), 3)
+        cur_score = score_cluster(cur_cluster)
+        score_hist.append(cur_score)
+        assign_hist.append(make_score_assign_memo(cur_cluster))
+        score_pretty = round(cur_score, 3)
         print 'ITR:', itr, 'E-Time:', e_time, 'Score:', score_pretty
 
         keep_evolving, cur_cluster = evolve_cluster(cur_cluster, population_eps)
 
-        #if itr == 10: keep_evolving = False
+        #if itr == 5: keep_evolving = False
 
     print 'Final Score:', round(score_cluster(cur_cluster), 3)
+    print 'Final Time:', datetime.datetime.now() - start_time
     write_out_results(
         cluster = cur_cluster,
         state = state,
         k = clusters,
         eps = population_eps,
-        seed = seed
+        seed = seed,
+        score_hist = score_hist,
+        assign_hist = assign_hist
     )
 
     return "Done"
@@ -233,7 +253,7 @@ process_cluster_pipeline(
 )
 '''
 
-seeds = [250, 600, 750, 1000]
+seeds = [250, 600, 750, 1000, 1300]
 for s in seeds:
     process_cluster_pipeline(
         state = subject_state,
@@ -247,7 +267,6 @@ for s in seeds:
 
 #------------------------------------------------
 # Unit Tests
-
 
 '''
 print '\n'
